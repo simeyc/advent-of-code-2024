@@ -54,9 +54,9 @@ updateLoop:
 				}
 			}
 		}
-			// Add the middle value to the result.
-			mid := (len(update) / 2)
-			result += update[mid]
+		// Add the middle value to the result.
+		mid := len(update) / 2
+		result += update[mid]
 	}
 
 	fmt.Printf("Part 1 result: %d\n", result)
