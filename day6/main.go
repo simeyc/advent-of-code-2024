@@ -66,8 +66,103 @@ func walk(areaMap *[][]byte, pos *[2]int, dir *rune) (int, bool) {
 	return steps, offMap
 }
 
-func main() {
-	text, _ := os.ReadFile("./day6/input.txt")
+
+// Walk as many steps as possible, from position pos on map areaMap in direction dir,
+// until bumping the edge of the map or a '#' character. Updates pos and dir to new
+// values. Paints '|'/'-'/'+' chars into areaMap for each step, marking hte route walked.
+// Returns whether the edge of the map was reached.
+func walk2(areaMap *[][]byte, pos *[2]int, dir *rune) bool {
+	i := pos[0]
+	j := pos[1]
+	startDir := *dir
+	maxI := len(*areaMap) - 1
+	maxJ := len((*areaMap)[0]) - 1
+	switch *dir {
+	case '^':
+		// Decrement line index until hitting edge or #.
+		for ; i > 0 && (*areaMap)[i-1][pos[1]] != '#'; i-- {
+			switch (*areaMap)[i][pos[1]] {
+			case '.':
+				(*areaMap)[i][pos[1]] = '|'
+			case '-':
+				(*areaMap)[i][pos[1]] = '+'
+			default:
+			}
+		}
+		if i > 0 {
+			*dir = '>'
+			(*areaMap)[i][pos[1]] = '+'
+		}
+	case 'v':
+		// Increment line index until hitting edge or #.
+		for ; i < maxI && (*areaMap)[i+1][pos[1]] != '#'; i++ {
+			switch (*areaMap)[i][pos[1]] {
+			case '.':
+				(*areaMap)[i][pos[1]] = '|'
+			case '-':
+				(*areaMap)[i][pos[1]] = '+'
+			default:
+			}
+		}
+		if i < maxI {
+			*dir = '<'
+			(*areaMap)[i][pos[1]] = '+'
+		}
+	case '<':
+		// Decrement line position until hitting edge or #.
+		for ; j > 0 && (*areaMap)[pos[0]][j-1] != '#'; j-- {
+			switch (*areaMap)[pos[0]][j] {
+			case '.':
+				(*areaMap)[pos[0]][j] = '-'
+			case '|':
+				(*areaMap)[pos[0]][j] = '+'
+			default:
+			}
+		}
+		if j > 0 {
+			*dir = '^'
+			(*areaMap)[pos[0]][j] = '+'
+		}
+	case '>':
+		// Increment line position until hitting edge or #.
+		for ; j < maxJ && (*areaMap)[pos[0]][j+1] != '#'; j++ {
+			switch (*areaMap)[pos[0]][j] {
+			case '.':
+				(*areaMap)[pos[0]][j] = '-'
+			case '|':
+				(*areaMap)[pos[0]][j] = '+'
+			default:
+			}
+		}
+		if j < maxJ {
+			*dir = 'v'
+			(*areaMap)[pos[0]][j] = '+'
+		}
+	default:
+		panic("Bad direction.")
+	}
+	*pos = [2]int{i,j}
+	offMap := *dir == startDir
+	if offMap {
+		if (*dir == '^' || *dir == 'v') {
+			if (*areaMap)[i][j] == '.' {
+				(*areaMap)[i][j] = '|'
+			} else if (*areaMap)[i][j] == '-' {
+				(*areaMap)[i][j] = '+'
+			}
+		} else {
+			if (*areaMap)[i][j] == '.' {
+				(*areaMap)[i][j] = '-'
+			} else if (*areaMap)[i][j] == '-' {
+				(*areaMap)[i][j] = '+'
+			}
+		}
+	}
+	return offMap
+}
+
+func parseInput(filepath string) ([][]byte, [2]int, rune) {
+	text, _ := os.ReadFile(filepath)
 	areaMap := bytes.Split(text, []byte{'\n'})
 	
 	// Find starting position and direction.
@@ -84,6 +179,11 @@ posLoop:
 		} 
 	}
 	//fmt.Printf("Starting pos: (%d,%d); Direction: %v\n", pos[0], pos[1], string(dir))
+	return areaMap, pos, dir
+}
+
+func part1() int {
+	areaMap, pos, dir := parseInput("./day6/input.txt")
 
 	offMap := false
 	for !offMap {
@@ -99,6 +199,27 @@ posLoop:
 	for i := range areaMap {
 		result += bytes.Count(areaMap[i], []byte{'X'})
 	}
-	
+
+	return result
+}
+
+func main() {
+	result := part1()	
 	fmt.Printf("Part 1 result: %d\n", result)
+
+	// Part 2
+	// Walk the course, painting with '|'/'-'/'+' chars (don't overwrite starting pos).
+	// If moving < and anywhere above me is a '+' under a '#', obstruction in the next slot creates a loop.
+	// Same if moving ^ and anywhere to my right is a '+#',
+	// or if moving > and anywhere below me is a '+' above a '#',
+	// or if moving v and to the left is a '#+'.
+	areaMap, pos, dir := parseInput("./day6/input_example.txt")
+	offMap := false
+	for !offMap {
+		offMap = walk2(&areaMap, &pos, &dir)
+	}
+
+	for i := range areaMap {
+		fmt.Printf("%s\n", string(areaMap[i]))
+	}
 }
